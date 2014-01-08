@@ -42,6 +42,11 @@ class Phone(object):
     def __repr__(self):
         return self.value
 
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
 
 class Word(object):
 
@@ -56,22 +61,6 @@ class Word(object):
         return "{}:\nphonemes: {}\nfrequency: {}\n".format(self.english,
                                                            self.phonetic,
                                                            self.frequency)
-
-"""
-
-Build a data structure.
-First group the words into a dict based on the last phoneme:
-
-{
-   AA0: tree,
-  AA1: tree,
-   T: place a tree here which we can traverse to build any word ending with a T sound
-
-}
-
-"""
-
-
 def get_words():
     with open('words', 'r') as dictionary:
         words = dictionary.read().splitlines()
@@ -101,33 +90,68 @@ def get_words():
         dictionary[word.english] = word
     return dictionary
 
+from copy import deepcopy as copy
+
 class Node(object):
+    parent = None
+    children = {}
+    words = set()
+    phone = None
 
-    def __init__(self, value=None):
-        self.children = {}
-        self.parent = None
-        self.root = None
-        self.value = None
+    def __init__(self, parent, phone, words=None, children=None):
+        self.parent = parent
+        self.phone = phone
 
-    def insert(self, word, node=None):
-        if not self.root:
-            self.root = Node()
-            self.root.value = word
+        if words:
+            self.words = words
+
+        if children:
+            self.children = children
+
+    def insert(self, word, node, depth=0):
+        current_phone = word.phonetic[-1 - depth]
+        if self.children[current_phone]:
+            self.children[current_phone].insert(word, node, depth=depth + 1)
         else:
-            if word not in self.children:
-                self.children[word] = Node(value=word)
-                self.children[word].parent = self
-                self.children[word].root = self.root
-            else:
-                pass
+            self.children[current_phone] = node
 
+def three_phrase(list):
+    phrases = []
+    for i, word in enumerate(list):
+        phrase = []
+        if i == 0:
+            phrase.append(None)
+        else:
+            phrase.append(list[i-1])
 
+        phrase.append(word)
+
+        try:
+            phrase.append(list[i+1])
+        except IndexError:
+            phrase.append(None)
+
+        phrases.append(tuple(phrase))
+    return phrases
+
+def similar_words(rhyming_clusters, word):
+    return [ rhyming_clusters[x] for x in dictionary[word].complete_sounds ]
+
+rhyming_clusters = {}
 def main():
-    words = get_words()
-    for word in words:
-        print word.__repr__()
+    global rhyming_clusters
+    global dictionary
+    dictionary = get_words()
+ #   for word in dictionary:
+#        dictionary[word].complete_sounds = three_phrase(dictionary[word].phonetic)
 
-
+    for word in dictionary:
+        for phoneme in dictionary[word].phonetic:
+            try:
+                rhyming_clusters[phoneme].add(word)
+            except KeyError:
+                rhyming_clusters[phoneme] = set()
+                rhyming_clusters[phoneme].add(word)
 
 if __name__ == "__main__":
     main()
