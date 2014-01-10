@@ -90,60 +90,11 @@ def get_words():
         dictionary[word.english] = word
     return dictionary
 
-from copy import deepcopy as copy
-
-class Node(object):
-    parent = None
-    children = {}
-    words = set()
-    phone = None
-
-    def __init__(self, parent, phone, words=None, children=None):
-        self.parent = parent
-        self.phone = phone
-
-        if words:
-            self.words = words
-
-        if children:
-            self.children = children
-
-    def insert(self, word, node, depth=0):
-        current_phone = word.phonetic[-1 - depth]
-        if self.children[current_phone]:
-            self.children[current_phone].insert(word, node, depth=depth + 1)
-        else:
-            self.children[current_phone] = node
-
-def three_phrase(list):
-    phrases = []
-    for i, word in enumerate(list):
-        phrase = []
-        if i == 0:
-            phrase.append(None)
-        else:
-            phrase.append(list[i-1])
-
-        phrase.append(word)
-
-        try:
-            phrase.append(list[i+1])
-        except IndexError:
-            phrase.append(None)
-
-        phrases.append(tuple(phrase))
-    return phrases
-
-def similar_words(rhyming_clusters, word):
-    return [ rhyming_clusters[x] for x in dictionary[word].complete_sounds ]
-
 rhyming_clusters = {}
 def main():
     global rhyming_clusters
     global dictionary
     dictionary = get_words()
- #   for word in dictionary:
-#        dictionary[word].complete_sounds = three_phrase(dictionary[word].phonetic)
 
     for word in dictionary:
         for phoneme in dictionary[word].phonetic:
